@@ -1,0 +1,63 @@
+header#banner.hero-unit
+  .container
+    h3 {{employee.title}}
+.container
+  .row(ng-if="!emp.employee && emp.editMode")
+    br
+    div.alert.alert-danger.text-center
+      strong {{emp.error}}
+
+  .row(ng-if="emp.employee")
+    br
+    form(role='form', name='empForm', ng-submit="emp.submitEmployee(empForm)", novalidate)
+      .form-group(ng-if="emp.editMode")
+        label(for='empid') Employee ID:
+        input#empid.form-control(type='text', readonly, name='empId', ng-value="emp.employee.empId")
+
+        //First Name
+      .form-group(ng-class='{ "has-success":(empForm.firstName.$valid && empForm.firstName.$touched) ||( empForm.firstName.$valid && emp.submitted), "has-error":(empForm.firstName.$invalid && empForm.firstName.$touched) ||( empForm.firstName.$invalid && emp.submitted )}')
+        label(for='fname') First Name:
+        input#fname.form-control(type='text', placeholder='First Name', name='firstName', ng-model="emp.employee.firstName", ng-maxlength='150', required, validation-error)
+        p.help-block(ng-show="(empForm.firstName.$error.required && empForm.firstName.$touched) ||( empForm.firstName.$error.required && emp.submitted )")
+          | Please enter first name.
+        p.help-block(ng-show="empForm.firstName.$error.maxlength")
+          | First name should not exceed more than 150 characters.
+        p.help-block(ng-show="empForm.firstName.$error.server")
+          | {{ emp.errors.firstName }}
+
+        //Last Name
+      .form-group(ng-class='{ "has-success":(empForm.lastName.$valid && empForm.lastName.$touched) ||( empForm.lastName.$valid && emp.submitted), "has-error":(empForm.lastName.$invalid && empForm.lastName.$touched) ||( empForm.lastName.$invalid && emp.submitted )}')
+        label(for='lname') Last Name:
+        input#lname.form-control(type='text', placeholder='Last Name', name='lastName', ng-model="emp.employee.lastName", ng-maxlength='150', required, validation-error)
+        p.help-block(ng-show="(empForm.lastName.$error.required && empForm.lastName.$touched) ||(empForm.lastName.$error.required && emp.submitted )")
+          | Please enter last name.
+        p.help-block(ng-show="empForm.lastName.$error.maxlength")
+          | Last name should not exceed more than 150 characters.
+        p.help-block(ng-show="empForm.lastName.$error.server")
+          | {{ emp.errors.lastName }}
+
+        //Email
+      .form-group(ng-class='{ "has-success":(empForm.email.$valid && empForm.email.$touched) ||( empForm.email.$valid && emp.submitted), "has-error":(empForm.email.$invalid && empForm.email.$touched) ||( empForm.email.$invalid && emp.submitted )}')
+        label(for='email') Email:
+        input#email.form-control(type='email', placeholder='Email', name='email', ng-model="emp.employee.email", ng-maxlength='150', required, validation-error)
+        p.help-block(ng-show="(empForm.email.$error.required && empForm.email.$touched) ||(empForm.email.$error.required && emp.submitted )")
+          | Please enter a valid email.
+        p.help-block(ng-show="empForm.email.$error.maxlength")
+          | Email should not exceed more than 150 characters.
+        p.help-block(ng-show="empForm.email.$error.email")
+          | Doesn't look like an email address
+        p.help-block(ng-show="empForm.email.$error.server")
+          | {{ emp.errors.email }}
+
+        //Position
+      .form-group(ng-class='{ "has-success":(empForm.position.$valid && empForm.position.$touched) ||( empForm.position.$valid && emp.submitted), "has-error":(empForm.position.$invalid && empForm.position.$touched) ||( empForm.position.$invalid && emp.submitted )}')
+        label(for='position') Position:
+        input#position.form-control(type='text', placeholder='Position', name='position', ng-model="emp.employee.position", ng-maxlength='75', validation-error)
+        p.help-block(ng-show="empForm.position.$error.maxlength")
+          | Position should not exceed more than 75 characters.
+        p.help-block(ng-show="empForm.position.$error.server")
+          | {{ emp.errors.position }}
+
+
+
+      button.btn.btn-default(type='submit', ng-disabled="emp.isProcessing") Submit

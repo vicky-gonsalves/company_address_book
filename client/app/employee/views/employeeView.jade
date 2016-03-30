@@ -1,0 +1,33 @@
+header#banner.hero-unit
+  h3 Company Address Book
+
+.container
+  .row(ng-if="!empView.employee")
+    br
+    div.alert.alert-danger.text-center
+      strong {{empView.error}}
+
+  col-lg-6
+  .panel-body(ng-if="empView.employee")
+    h4 EmployeeID:
+      span.normal
+        | &nbsp;{{empView.employee.empId}}
+
+    h4 First Name:
+      span.normal
+        | &nbsp;{{empView.employee.firstName}}
+
+    h4 Last Name:
+      span.normal
+        | &nbsp;{{empView.employee.lastName}}
+
+    h4 Email:
+      span.normal
+        | &nbsp;{{empView.employee.email}}
+
+    h4 Position:
+      span.normal
+        | &nbsp;{{empView.employee.position}}
+
+    button(tooltip='Edit', ng-click="empView.editEmployee(empView.employee._id)").btn.btn-default.i.fa.fa-edit.mr5
+    button(tooltip='Delete', ng-click="empView.deleteConfirm(empView.employee.empId, empView.employee)").btn.btn-default.i.fa.fa-trash

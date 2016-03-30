@@ -1,5 +1,7 @@
 # Address Book
 
+This project is based on Daftmonk's Angular Generator https://github.com/angular-fullstack/generator-angular-fullstack
+
 Demo: https://companyaddressbook.herokuapp.com
 
 ### Prerequisites

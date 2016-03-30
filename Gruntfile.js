@@ -17,6 +17,7 @@ module.exports = function (grunt) {
     cdnify: 'grunt-google-cdn',
     protractor: 'grunt-protractor-runner',
     buildcontrol: 'grunt-build-control',
+    istanbul_check_coverage: 'grunt-mocha-istanbul',
     ngconstant: 'grunt-ng-constant'
   });
 
@@ -75,6 +76,14 @@ module.exports = function (grunt) {
         files: ['<%= yeoman.client %>/{app,components}/**/*.css'],
         tasks: ['injector:css']
       },
+      mochaTest: {
+        files: ['<%= yeoman.server %>/**/*.{spec,integration}.js'],
+        tasks: ['env:test', 'mochaTest']
+      },
+      jsTest: {
+        files: ['<%= yeoman.client %>/{app,components}/**/*.{spec,mock}.js'],
+        tasks: ['newer:jshint:all', 'wiredep:test', 'karma']
+      },
       injectLess: {
         files: ['<%= yeoman.client %>/{app,components}/**/*.less'],
         tasks: ['injector:less']
@@ -111,6 +120,30 @@ module.exports = function (grunt) {
       bower: {
         files: ['bower.json'],
         tasks: ['wiredep']
+      },
+    },
+
+    // Make sure code styles are up to par and there are no obvious mistakes
+    jshint: {
+      options: {
+        jshintrc: '<%= yeoman.client %>/.jshintrc',
+        reporter: require('jshint-stylish')
+      },
+      server: {
+        options: {
+          jshintrc: '<%= yeoman.server %>/.jshintrc'
+        },
+        src: ['<%= yeoman.server %>/**/!(*.spec|*.integration).js']
+      },
+      serverTest: {
+        options: {
+          jshintrc: '<%= yeoman.server %>/.jshintrc-spec'
+        },
+        src: ['<%= yeoman.server %>/**/*.{spec,integration}.js']
+      },
+      all: ['<%= yeoman.client %>/{app,components}/**/!(*.spec|*.mock|app.constant).js'],
+      test: {
+        src: ['<%= yeoman.client %>/{app,components}/**/*.{spec,mock}.js']
       }
     },
 
@@ -194,7 +227,7 @@ module.exports = function (grunt) {
       }
     },
 
-    // Automatically inject Bower components into the app
+    // Automatically inject Bower components into the app and karma.conf.js
     wiredep: {
       options: {
         exclude: [
@@ -208,6 +241,10 @@ module.exports = function (grunt) {
       client: {
         src: '<%= yeoman.client %>/index.html',
         ignorePath: '<%= yeoman.client %>/',
+      },
+      test: {
+        src: './karma.conf.js',
+        devDependencies: true
       }
     },
 
@@ -379,7 +416,7 @@ module.exports = function (grunt) {
       },
       heroku: {
         options: {
-          remote: 'heroku',
+          remote: 'https://git.heroku.com/companyaddressbook.git',
           branch: 'master'
         }
       },
@@ -402,6 +439,11 @@ module.exports = function (grunt) {
         'jade',
         'less',
       ],
+      test: [
+        'newer:babel:client',
+        'jade',
+        'less',
+      ],
       debug: {
         tasks: [
           'nodemon',
@@ -419,7 +461,82 @@ module.exports = function (grunt) {
       ]
     },
 
+    // Test settings
+    karma: {
+      unit: {
+        configFile: 'karma.conf.js',
+        singleRun: true
+      }
+    },
+
+    mochaTest: {
+      options: {
+        reporter: 'spec',
+        require: 'mocha.conf.js',
+        timeout: 5000 // set default mocha spec timeout
+      },
+      unit: {
+        src: ['<%= yeoman.server %>/**/*.spec.js']
+      },
+      integration: {
+        src: ['<%= yeoman.server %>/**/*.integration.js']
+      }
+    },
+
+    mocha_istanbul: {
+      unit: {
+        options: {
+          excludes: ['**/*.{spec,mock,integration}.js'],
+          reporter: 'spec',
+          require: ['mocha.conf.js'],
+          mask: '**/*.spec.js',
+          coverageFolder: 'coverage/server/unit'
+        },
+        src: '<%= yeoman.server %>'
+      },
+      integration: {
+        options: {
+          excludes: ['**/*.{spec,mock,integration}.js'],
+          reporter: 'spec',
+          require: ['mocha.conf.js'],
+          mask: '**/*.integration.js',
+          coverageFolder: 'coverage/server/integration'
+        },
+        src: '<%= yeoman.server %>'
+      }
+    },
+
+    istanbul_check_coverage: {
+      default: {
+        options: {
+          coverageFolder: 'coverage/**',
+          check: {
+            lines: 80,
+            statements: 80,
+            branches: 80,
+            functions: 80
+          }
+        }
+      }
+    },
+
+    protractor: {
+      options: {
+        configFile: 'protractor.conf.js'
+      },
+      chrome: {
+        options: {
+          args: {
+            browser: 'chrome'
+          }
+        }
+      }
+    },
+
     env: {
+      test: {
+        NODE_ENV: 'test'
+      },
       prod: {
         NODE_ENV: 'production'
       },
@@ -505,11 +622,11 @@ module.exports = function (grunt) {
         },
         files: {
           '<%= yeoman.client %>/index.html': [
-               [
-                 '<%= yeoman.client %>/{app,components}/**/!(*.spec|*.mock).js',
-                 '!{.tmp,<%= yeoman.client %>}/app/app.{js,ts}'
-               ]
+            [
+              '<%= yeoman.client %>/{app,components}/**/!(*.spec|*.mock).js',
+              '!{.tmp,<%= yeoman.client %>}/app/app.{js,ts}'
             ]
+          ]
         }
       },
 
@@ -551,7 +668,7 @@ module.exports = function (grunt) {
           ]
         }
       }
-    }
+    },
   });
 
   // Used for delaying livereload until after server has restarted
@@ -575,6 +692,18 @@ module.exports = function (grunt) {
       return grunt.task.run(['build', 'env:all', 'env:prod', 'express:prod', 'wait', 'open', 'express-keepalive']);
     }
 
+    if (target === 'debug') {
+      return grunt.task.run([
+        'clean:server',
+        'env:all',
+        'concurrent:pre',
+        'concurrent:server',
+        'injector',
+        'wiredep:client',
+        'postcss',
+        'concurrent:debug'
+      ]);
+    }
 
     grunt.task.run([
       'clean:server',
@@ -594,6 +723,98 @@ module.exports = function (grunt) {
   grunt.registerTask('server', function () {
     grunt.log.warn('The `server` task has been deprecated. Use `grunt serve` to start a server.');
     grunt.task.run(['serve']);
+  });
+
+  grunt.registerTask('test', function(target, option) {
+    if (target === 'server') {
+      return grunt.task.run([
+        'env:all',
+        'env:test',
+        'mochaTest:unit',
+        'mochaTest:integration'
+      ]);
+    }
+
+    else if (target === 'client') {
+      return grunt.task.run([
+        'clean:server',
+        'env:all',
+        'concurrent:pre',
+        'concurrent:test',
+        'injector',
+        'postcss',
+        'wiredep:test',
+        'karma'
+      ]);
+    }
+
+    else if (target === 'e2e') {
+
+      if (option === 'prod') {
+        return grunt.task.run([
+          'build',
+          'env:all',
+          'env:prod',
+          'express:prod',
+          'protractor'
+        ]);
+      }
+
+      else {
+        return grunt.task.run([
+          'clean:server',
+          'env:all',
+          'env:test',
+          'concurrent:pre',
+          'concurrent:test',
+          'injector',
+          'wiredep:client',
+          'postcss',
+          'express:dev',
+          'protractor'
+        ]);
+      }
+    }
+
+    else if (target === 'coverage') {
+
+      if (option === 'unit') {
+        return grunt.task.run([
+          'env:all',
+          'env:test',
+          'mocha_istanbul:unit'
+        ]);
+      }
+
+      else if (option === 'integration') {
+        return grunt.task.run([
+          'env:all',
+          'env:test',
+          'mocha_istanbul:integration'
+        ]);
+      }
+
+      else if (option === 'check') {
+        return grunt.task.run([
+          'istanbul_check_coverage'
+        ]);
+      }
+
+      else {
+        return grunt.task.run([
+          'env:all',
+          'env:test',
+          'mocha_istanbul',
+          'istanbul_check_coverage'
+        ]);
+      }
+
+    }
+
+    else grunt.task.run([
+        'test:server',
+        'test:client'
+      ]);
   });
 
   grunt.registerTask('build', [
@@ -617,6 +838,8 @@ module.exports = function (grunt) {
   ]);
 
   grunt.registerTask('default', [
+    'newer:jshint',
+    'test',
     'build'
   ]);
 };
